@@ -47,7 +47,7 @@
 ### Phase 4: Gemini Integration & Prompting (Handling Output Limits)
 
 * **Task 4.1: Configure Gemini Client:**
-    * Import `google.generativeai as genai`.
+    * Import `google.genai as genai` (using the new `google-genai` client library).
     * Configure the client: `genai.configure(api_key=...)`.
     * Instantiate the model: `model = genai.GenerativeModel('gemini-2.0-flash')`.
     * Verify exact function calls against `google-genai` documentation.

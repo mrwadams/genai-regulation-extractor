@@ -98,7 +98,7 @@ A potential architecture could include:
 
 ### 6. GenAI Model Details
 
-* **Model Selection:** Utilize the `gemini-2.0-flash` model, suitable for rapid iteration and cost-effective PoC development. Prioritize models with good instruction-following and structured data generation capabilities.
+* **Model Selection:** Utilize the `gemini-2.0-flash` model via the new `google-genai` client library, suitable for rapid iteration and cost-effective PoC development. Prioritize models with good instruction-following and structured data generation capabilities.
 * **Prompt Engineering:** Develop robust prompts that clearly instruct the model on:
     * The desired output format (JSON/YAML schema).
     * How to identify section headings and hierarchy.
@@ -107,7 +107,7 @@ A potential architecture could include:
 * **Handling Output Token Limits:**
     * **Acknowledge Constraint:** The `gemini-2.0-flash` model has a significant output token limit (e.g., 8,192 tokens). The structured JSON/YAML output for large regulations could exceed this limit if the entire document is processed in a single API call.
     * **Potential Strategies:**
-        1.  **Iterative Processing (Chunking):** Process the document in logical chunks (e.g., chapters, major sections). Send each chunk's text to the LLM and request the structured output *for that chunk*. Ensure the prompt requests output that fits within the limit for the chunk size. The application backend will then merge the structured results. This is likely the most robust approach for full extraction.
+        1.  **Iterative Processing (Chunking):** Process the document in logical chunks (e.g., chapters, major sections). Send each chunk's text to the LLM and request the structured output *for that chunk*. Ensure the prompt requests output that fits within the limit for the chunk size. The application backend will then merge the structured results. This is likely the most robust approach for full extraction, and should use the new `google-genai` client for all Gemini API calls.
         2.  **Prompt Modification (Partial Output):** For very large sections, prompts could potentially request the model to return only a subset of the structure or paginate its response, although this adds complexity to the prompt design and backend logic. (Less preferred for PoC unless chunking proves difficult).
         3.  **Streaming:** Investigate if the `google-genai` API and model support streaming responses. If so, the application could process the structured output incrementally as it's received, mitigating the single-response size limit.
 * **Fine-tuning (Optional):** Out of scope for the initial PoC. May be considered for future enhancements.
