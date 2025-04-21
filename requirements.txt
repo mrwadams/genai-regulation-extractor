@@ -1,0 +1,5 @@
+google-genai
+streamlit
+PyMuPDF
+python-dotenv
+PyYAML
