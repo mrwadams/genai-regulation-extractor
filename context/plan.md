@@ -18,6 +18,7 @@
     * Create a `requirements.txt` file.
 * **Task 1.4: API Key Configuration:**
     * Obtain a Gemini API key.
+    * The application will attempt to load the API key automatically from a `.env` file or the `GOOGLE_API_KEY` environment variable if present, reducing the need for manual entry.
 
 ### Phase 2: Basic Streamlit UI Structure
 
@@ -33,6 +34,8 @@
     * Include an `st.button()` to start the extraction.
 * **Task 2.6: Set Up Placeholders:**
     * Add placeholders (`st.empty()`) for status, preview, and download button.
+* **Task 2.7: Add Test Page Range Feature:**
+    * Implement a UI input allowing the user to specify a set of pages (e.g., 1-3,5,7-8) to process for testing purposes, so that only those pages are loaded and sent to the LLM. This enables rapid validation and debugging before running on the full document.
 
 ### Phase 3: PDF Parsing Module
 

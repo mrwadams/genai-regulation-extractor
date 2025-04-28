@@ -67,6 +67,7 @@ Compliance officers, legal professionals, risk managers, regulatory analysts, co
 * **NFR-003 (Scalability):** The system architecture should support single-user or limited concurrent use typical for a PoC. High scalability is not a primary objective for this phase but should be considered for future versions.
 * **NFR-004 (Usability):** The user interface (built with Streamlit) should be intuitive and require minimal training.
 * **NFR-005 (Security):** As the input documents are public information and this is a PoC, stringent security measures are not the primary focus. However, basic precautions should be taken (e.g., secure handling of API keys, avoiding unnecessary data persistence). Data encryption and robust access controls are deferred to later phases.
+* The application should securely and conveniently load the Gemini API key from a `.env` file or the `GOOGLE_API_KEY` environment variable if available, to improve usability and avoid unnecessary user prompts for the API key.
 * **NFR-006 (Reliability):** The system should be robust enough for demonstration purposes and handle potential errors during PDF parsing or AI processing gracefully.
 
 ### 4. System Architecture (High-Level)
@@ -120,12 +121,13 @@ A potential architecture could include:
 * **Workflow:**
     1.  Use `st.file_uploader` for PDF file selection.
     2.  Use `st.selectbox` or `st.radio` for selecting output format (JSON/YAML).
-    3.  Use `st.button` to trigger the extraction process.
-    4.  Display status using `st.spinner` or `st.progress`.
-    5.  Upon completion:
+    3.  Use `st.text_input` to optionally specify a set of pages (e.g., 1-3,5,7-8) to process for testing purposes, so only those pages are loaded and sent to the LLM. This enables rapid validation and debugging before running on the full document.
+    4.  Use `st.button` to trigger the extraction process.
+    5.  Display status using `st.spinner` or `st.progress`.
+    6.  Upon completion:
         * Display a preview using `st.json` or `st.code`.
         * Provide download links using `st.download_button`.
-    6.  Display errors using `st.error`.
+    7.  Display errors using `st.error`.
 
 ### 8. Error Handling & Validation
 
