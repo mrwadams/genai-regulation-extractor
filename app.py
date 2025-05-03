@@ -1,6 +1,6 @@
 import streamlit as st
 from pdf_parser import extract_text_from_pdf
-from gemini_client import get_structured_data_from_llm
+from gemini_client import get_structured_data_from_llm, stream_structured_data_from_llm
 import os
 from dotenv import load_dotenv
 
@@ -57,6 +57,9 @@ def parse_page_range(page_range_str, num_pages):
                 continue
     return sorted(pages)
 
+# Chunk size selection (pages per LLM call)
+chunk_size = st.number_input("Pages per chunk (for LLM call)", min_value=1, max_value=20, value=5, step=1)
+
 # Process button
 process_clicked = st.button("Extract Requirements")
 
@@ -80,21 +83,23 @@ if process_clicked and uploaded_file is not None and api_key:
             status_placeholder.error(str(e))
             preview_placeholder.empty()
     # --- Chunked LLM processing ---
-    chunk_size = 5
     chunks = ["\n".join(pages_text[i:i+chunk_size]) for i in range(0, len(pages_text), chunk_size)]
     llm_results = []
     for idx, chunk_text in enumerate(chunks):
-        with st.spinner(f"Processing chunk {idx+1}/{len(chunks)} with Gemini..."):
-            try:
-                result = get_structured_data_from_llm(chunk_text, output_format, api_key)
-                llm_results.append(result)
-            except Exception as e:
-                llm_results.append(f"Error: {e}")
-    # Show preview of first chunk's result
-    if llm_results:
-        preview_placeholder.code(llm_results[0][:2000], language="text")
-    else:
-        preview_placeholder.info("No LLM results.")
+        st.write(f"### Chunk {idx+1}/{len(chunks)}")
+        output_box = st.empty()  # placeholder for incremental update
+        accumulated = ""
+        try:
+            # Stream tokens incrementally
+            for part in stream_structured_data_from_llm(chunk_text, output_format, api_key):
+                accumulated += part
+                output_box.code(accumulated, language="text")
+            llm_results.append(accumulated)
+        except Exception as e:
+            error_msg = f"Error: {e}"
+            output_box.error(error_msg)
+            llm_results.append(error_msg)
+    # No separate preview placeholder needed; live output boxes show content.
 else:
     status_placeholder.empty()
     preview_placeholder.empty()
