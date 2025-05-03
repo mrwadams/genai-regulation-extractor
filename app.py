@@ -1,8 +1,14 @@
 import streamlit as st
 from pdf_parser import extract_text_from_pdf
-from gemini_client import get_structured_data_from_llm, stream_structured_data_from_llm
+from gemini_client import (
+    get_structured_data_from_llm,
+    stream_structured_data_from_llm,
+)
+from output_utils import parse_llm_output, merge_structures
 import os
 from dotenv import load_dotenv
+import json
+import yaml
 
 st.set_page_config(page_title="GenAI Regulation Extraction Tool", layout="centered")
 
@@ -58,7 +64,18 @@ def parse_page_range(page_range_str, num_pages):
     return sorted(pages)
 
 # Chunk size selection (pages per LLM call)
-chunk_size = st.number_input("Pages per chunk (for LLM call)", min_value=1, max_value=20, value=5, step=1)
+chunk_size = st.number_input(
+    "Pages per chunk (for LLM call)",
+    min_value=1,
+    max_value=20,
+    value=5,
+    step=1,
+    help=(
+        "Controls how many PDF pages are sent to the AI in each request. "
+        "If you see errors about incomplete or truncated output, try lowering this number (e.g., 1 or 2). "
+        "Smaller values reduce the chance of hitting the model's output limit, but may take longer to process the whole document."
+    ),
+)
 
 # Process button
 process_clicked = st.button("Extract Requirements")
@@ -99,9 +116,54 @@ if process_clicked and uploaded_file is not None and api_key:
             error_msg = f"Error: {e}"
             output_box.error(error_msg)
             llm_results.append(error_msg)
-    # No separate preview placeholder needed; live output boxes show content.
+
+    # --- Parse chunk responses & merge into a single structure ---
+    st.write("---")
+    st.subheader("Post-processing chunks")
+
+    parsed_structs = []
+    for idx, raw in enumerate(llm_results):
+        try:
+            struct = parse_llm_output(raw, output_format)
+            parsed_structs.append(struct)
+        except Exception as e:  # noqa: BLE001
+            st.error(
+                f"Chunk {idx + 1}: parsing failed – {e}\n"
+                "Tip: If you see this error, try reducing the 'Pages per chunk' number above. "
+                "This helps avoid output truncation by the AI model."
+            )
+
+    if parsed_structs:
+        try:
+            merged_structure = merge_structures(parsed_structs)
+
+            st.subheader("Merged Structured Output Preview")
+
+            if output_format.upper() == "JSON":
+                st.json(merged_structure)
+                download_bytes = json.dumps(merged_structure, indent=2).encode()
+                mime = "application/json"
+                file_name = "extracted_structure.json"
+            else:
+                yaml_str = yaml.safe_dump(merged_structure, sort_keys=False, indent=2)
+                st.code(yaml_str, language="yaml")
+                download_bytes = yaml_str.encode()
+                mime = "text/yaml"
+                file_name = "extracted_structure.yaml"
+
+            download_placeholder.download_button(
+                label="Download structured output",
+                data=download_bytes,
+                file_name=file_name,
+                mime=mime,
+            )
+        except Exception as e:  # noqa: BLE001
+            st.error(f"Failed to merge structured outputs: {e}")
+    else:
+        st.warning("No valid structured outputs to merge.")
+    # End of processing logic
 else:
     status_placeholder.empty()
     preview_placeholder.empty()
 
-# (No processing logic yet) 
+# End of script 
