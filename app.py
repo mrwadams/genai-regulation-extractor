@@ -80,6 +80,12 @@ chunk_size = st.number_input(
 # Process button
 process_clicked = st.button("Extract Requirements")
 
+# If the user clicked process but is missing inputs, give immediate feedback
+if process_clicked and uploaded_file is None:
+    status_placeholder.warning("Please upload a PDF file before processing.")
+elif process_clicked and not api_key:
+    status_placeholder.warning("Please enter your Gemini API key before processing.")
+
 # Placeholders for preview and download
 preview_placeholder = st.empty()
 download_placeholder = st.empty()
@@ -102,6 +108,10 @@ if process_clicked and uploaded_file is not None and api_key:
     # --- Chunked LLM processing ---
     chunks = ["\n".join(pages_text[i:i+chunk_size]) for i in range(0, len(pages_text), chunk_size)]
     llm_results = []
+
+    # Progress bar across chunks
+    progress_bar = st.progress(0)
+
     for idx, chunk_text in enumerate(chunks):
         st.write(f"### Chunk {idx+1}/{len(chunks)}")
         output_box = st.empty()  # placeholder for incremental update
@@ -116,6 +126,10 @@ if process_clicked and uploaded_file is not None and api_key:
             error_msg = f"Error: {e}"
             output_box.error(error_msg)
             llm_results.append(error_msg)
+        # Update overall progress
+        progress_bar.progress(int(((idx + 1) / len(chunks)) * 100))
+
+    progress_bar.empty()
 
     # --- Parse chunk responses & merge into a single structure ---
     st.write("---")
