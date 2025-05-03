@@ -1,3 +1,11 @@
+"""PDF parsing utilities for the GenAI Regulation Extraction Tool (PoC).
+
+Currently contains :func:`extract_text_from_pdf`, which extracts plain text from
+an uploaded PDF file (Streamlit uploader) using PyMuPDF. Additional parsing
+functions or more advanced OCR capabilities can be added here in future
+iterations.
+"""
+
 import fitz  # PyMuPDF
 from typing import List
 

@@ -1,3 +1,16 @@
+"""Wrapper utilities for interacting with the Gemini GenAI API.
+
+Two public helpers are exposed:
+  • :func:`get_structured_data_from_llm` – single-call extraction (optionally
+    streamed internally).
+  • :func:`stream_structured_data_from_llm` – true streaming generator that
+    yields parts of the response incrementally, ideal for updating the UI in
+    real-time within Streamlit.
+
+Both helpers share the same prompt-building logic via the private
+:func:`_build_prompt` function.
+"""
+
 import time
 
 from google import genai

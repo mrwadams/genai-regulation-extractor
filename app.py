@@ -1,7 +1,19 @@
+"""Streamlit web application for the GenAI Regulation Extraction Tool (PoC).
+
+This app allows a user to upload a regulation PDF, chunk the document, send each chunk to
+Google Gemini (via the `google-genai` client), receive structured JSON/YAML output, and
+finally merge and download the complete hierarchical structure.
+
+Configuration notes:
+  • The Gemini API key is loaded automatically from the `GOOGLE_API_KEY` environment
+    variable or a `.env` file if available. It can also be entered manually in the UI.
+  • Adjust the "Pages per chunk" control if you encounter output-length errors.
+"""
+
 import streamlit as st
 from pdf_parser import extract_text_from_pdf
 from gemini_client import (
-    get_structured_data_from_llm,
+    # get_structured_data_from_llm,  # Unused – removed for clarity
     stream_structured_data_from_llm,
 )
 from output_utils import parse_llm_output, merge_structures

@@ -1,3 +1,15 @@
+"""Utility functions for parsing and post-processing Gemini model output.
+
+This module is responsible for:
+  • Stripping markdown code fences from the model output.
+  • Parsing the raw JSON/YAML strings into Python dictionaries with robust
+    fall-back logic to salvage partially malformed JSON.
+  • Merging a list of chunk-level structures into a single document-level
+    structure.  The merging strategy is intentionally simple for this PoC and
+    can be replaced with a more sophisticated deduplication/merging algorithm
+    in future versions.
+"""
+
 import json
 import yaml
 from typing import Any, Dict, List
