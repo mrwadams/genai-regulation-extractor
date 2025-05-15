@@ -1,97 +1,105 @@
-# GenAI Regulation Extraction Tool (PoC)
+# GenAI Regulation Extraction Tool (Proof of Concept)
 
-A lightweight Streamlit application that demonstrates how Google Gemini can be
-used to transform large regulation PDFs into a structured, machine-readable
-representation (JSON or YAML).
+## Overview
 
----
+The GenAI Regulation Extraction Tool is a web-based application built with Streamlit that assists users in extracting structured information (such as requirements, sections, and keywords) from PDF documents containing regulatory text. It leverages Google's Gemini generative AI model to parse and interpret the content of the uploaded PDFs, providing the output in either JSON or YAML format, as well as a tabular view of extracted requirements.
+
+This tool is designed as a Proof of Concept (PoC) to demonstrate the potential of AI in automating parts of the regulatory analysis workflow.
 
 ## Features
 
-* **PDF upload** – drag-and-drop a regulation (up to ~50 MB).
-* **Selective page processing** – optionally focus on specific pages for rapid
-  iteration.
-* **Chunked Gemini calls** – configurable page-per-chunk setting mitigates the
-  model's output-length limit.
-* **Live streaming UI** – watch the structured output appear in real-time for
-  each chunk.
-* **Robust parsing & merging** – helper utilities salvage minor formatting
-  issues and merge chunk-level structures into a single document.
-* **One-click download** – grab the final JSON or YAML file.
+*   **PDF Upload:** Easily upload regulation documents in PDF format.
+*   **Selective Page Processing:** Option to specify page ranges for targeted extraction.
+*   **Configurable Chunking:** Adjust the number of pages processed per AI call to manage API limits and improve output quality.
+*   **AI-Powered Extraction:** Utilizes Google Gemini for understanding and structuring information from text.
+*   **Structured Output:** Provides results in user-selected JSON or YAML formats.
+*   **Tabular View:** Displays extracted requirements in an interactive table.
+*   **Data Download:** Allows downloading of the full structured output (JSON/YAML) and the requirements table (CSV).
+*   **User-Friendly Interface:** Simple and intuitive UI built with Streamlit.
 
----
+## Setup and Running Locally
 
-## Quickstart
+Follow these steps to set up and run the GenAI Regulation Extraction Tool on your local machine:
 
-1. **Clone the repo** (or download the code).
-   ```bash
-   git clone <your-fork-url>
-   cd reg_analyser  # project root
-   ```
+1.  **Clone the Repository:**
+    ```bash
+    git clone <your-repository-url>
+    cd <your-repository-name>
+    ```
 
-2. **Create a virtual environment** (recommended).
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Windows: .venv\Scripts\activate
-   ```
+2.  **Create and Activate a Python Virtual Environment:**
+    (Recommended to avoid conflicts with other Python projects)
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    ```
 
-3. **Install dependencies**.
-   ```bash
-   pip install -r requirements.txt
-   ```
+3.  **Install Dependencies:**
+    Ensure you have a `requirements.txt` file in your project root with the necessary packages. If not, create one with at least the following:
+    ```
+    streamlit
+    google-generativeai
+    PyPDF2
+    python-dotenv
+    PyYAML
+    pandas
+    ```
+    Then, install the dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-4. **Add your Gemini API key**.
-   * Sign up for the Gemini API and grab an API key.
-   * Either:
-     * Export it as an env var: `export GOOGLE_API_KEY="<YOUR_KEY>"`, **or**
-     * Create a `.env` file in the project root:
-       ```
-       GOOGLE_API_KEY=<YOUR_KEY>
-       ```
+4.  **Set Up Environment Variables:**
+    The tool requires a Google Gemini API key. You can set this as an environment variable named `GOOGLE_API_KEY`.
+    Create a `.env` file in the project root:
+    ```
+    GOOGLE_API_KEY="YOUR_GEMINI_API_KEY_HERE"
+    ```
+    The application will load this key automatically. Alternatively, you can enter the API key directly in the UI.
 
-5. **Run the app**.
-   ```bash
-   streamlit run app.py
-   ```
-   The browser tab should open automatically (usually <http://localhost:8501>).
+5.  **Run the Streamlit Application:**
+    ```bash
+    streamlit run app.py
+    ```
+    This will start the application, and you can access it in your web browser (usually at `http://localhost:8501`).
 
----
+## Configuration
 
-## Usage Tips
+The application provides several configuration options directly in the user interface:
 
-* **Pages per chunk** – If you encounter errors about incomplete JSON/YAML,
-  lower this value. 1-2 pages per chunk is safest, but slower.
-* **Page range** – Provide values like `1-5, 10, 12-14` to restrict processing
-  during prompt tuning.
-* **Output inspection** – Invalid chunks are flagged in red; use the tips shown
-  to adjust chunk size or refine prompts.
+*   **Upload PDF:** Select the regulation PDF document to process.
+*   **(Optional) Page Range:** Specify particular pages or ranges of pages to process (e.g., `1-3, 5, 7-8`). Leave empty to process all pages.
+*   **Pages per Chunk:** Define how many PDF pages are sent to the AI model in each request. Smaller values (e.g., 1 or 2) can help with large documents or if you encounter output length errors from the AI, but may take longer.
+*   **Output Format:** Choose between JSON and YAML for the structured data output.
+*   **Gemini API Key:** Enter your Google Gemini API key if not set via the `.env` file.
 
----
+## Important Considerations & Disclaimer
 
-## File Overview
+*   **AI-Powered Extraction:** This tool utilizes a Generative AI model (Google Gemini). The accuracy and completeness of the extracted information are dependent on the clarity of the PDF document, the complexity of the regulatory text, and the inherent capabilities and limitations of the AI model.
+*   **User Review is Crucial:** **Always** carefully review the output generated by this tool. AI models can make mistakes, misinterpret nuances, or omit information. This tool should be used as an assistant to augment human review, not as a replacement for it.
+*   **Proof of Concept (PoC):** This application is a Proof of Concept. It is intended to demonstrate a potential use case for AI in regulatory analysis and may have limitations. It is not recommended for production use without further rigorous development, testing, and validation.
+*   **API Costs:** Be mindful of the costs associated with using the Google Gemini API, especially when processing large documents or many files.
 
-| File | Purpose |
-|------|---------|
-| `app.py` | Streamlit UI and orchestration logic |
-| `pdf_parser.py` | Text extraction via PyMuPDF |
-| `gemini_client.py` | Thin wrapper around the `google-genai` client |
-| `output_utils.py` | Parsing and merging helpers |
-| `requirements.txt` | Python dependencies |
-| `context/` | Design docs & specifications |
+## Potential Future Enhancements
 
----
+*   Support for other document formats (e.g., .docx, .txt).
+*   More sophisticated chunking strategies (e.g., by section rather than page count).
+*   Advanced error handling and retry mechanisms for API calls.
+*   Integration with vector databases for semantic search over extracted requirements.
+*   User accounts and history of processed documents.
+*   Batch processing of multiple documents.
+*   Fine-tuning options or prompt engineering UI for more tailored extractions.
 
-## Roadmap
+## Contributing
 
-This PoC focuses on demonstrating feasibility. Potential next steps include:
+Contributions are welcome! If you have suggestions for improvements or want to contribute to the code, please feel free to fork the repository, make your changes, and submit a pull request. You can also open an issue to report bugs or suggest new features.
 
-* Smarter section-ID deduplication during merging.
-* Better prompts and evaluation against a gold-standard dataset.
-* OCR support for scanned PDFs.
-* Dockerfile & GitHub Actions CI.
-
----
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
 ## License
 
-MIT — see `LICENSE` (or replace with your chosen license). 
+Distributed under the MIT License. See `LICENSE.txt` for more information.
