@@ -13,14 +13,14 @@ Configuration notes:
 import streamlit as st
 from pdf_parser import extract_text_from_pdf
 from gemini_client import (
-    # get_structured_data_from_llm,  # Unused – removed for clarity
     stream_structured_data_from_llm,
 )
-from output_utils import parse_llm_output, merge_structures
+from output_utils import parse_llm_output, merge_structures, flatten_requirements
 import os
 from dotenv import load_dotenv
 import json
 import yaml
+import pandas as pd
 
 st.set_page_config(page_title="GenAI Regulation Extraction Tool", layout="centered")
 
@@ -187,6 +187,26 @@ if process_clicked and uploaded_file is not None and api_key:
             st.error(f"Failed to merge structured outputs: {e}")
     else:
         st.warning("No valid structured outputs to merge.")
+
+    # --- New: tabular view & CSV/Excel export ---
+    if parsed_structs and 'merged_structure' in locals():
+        st.write("---")
+        st.subheader("Requirements Table")
+
+        rows = flatten_requirements(merged_structure)
+        if rows:
+            df = pd.DataFrame(rows)
+            st.dataframe(df, use_container_width=True)
+
+            csv_bytes = df.to_csv(index=False).encode()
+            download_placeholder.download_button(
+                label="Download CSV",
+                data=csv_bytes,
+                file_name="requirements.csv",
+                mime="text/csv",
+            )
+        else:
+            st.info("No requirements found in the merged structure.")
     # End of processing logic
 else:
     status_placeholder.empty()

@@ -3,3 +3,5 @@ streamlit
 PyMuPDF
 python-dotenv
 PyYAML
+
+pandas

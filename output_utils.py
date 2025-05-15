@@ -131,4 +131,45 @@ def merge_structures(chunk_structs: List[Dict[str, Any]]) -> Dict[str, Any]:
         merged_sections.extend(sections)
 
     merged["sections"] = merged_sections
-    return merged 
+    return merged
+
+
+def flatten_requirements(struct: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Flatten the hierarchical *struct* into a list of requirement rows.
+
+    Each row contains the section information alongside the requirement fields so
+    that it can be easily exported as CSV/Excel.
+    """
+    rows: List[Dict[str, Any]] = []
+
+    def _recurse(sections: List[Dict[str, Any]], parent_path: str = "") -> None:
+        for sec in sections or []:
+            sec_id = sec.get("id", "")
+            sec_title = sec.get("title", "")
+            path = sec_id if not parent_path else f"{parent_path}.{sec_id}"
+            for req in sec.get("requirements", []) or []:
+                rows.append(
+                    {
+                        "section_id": path,
+                        "section_title": sec_title,
+                        "requirement_id": req.get("req_id", ""),
+                        "requirement_text": req.get("text", ""),
+                        "keywords": (
+                            ", ".join(req.get("keywords", []))
+                            if isinstance(req.get("keywords"), list)
+                            else req.get("keywords", "")
+                        ),
+                    }
+                )
+            # Recurse into any nested children (handle both "subsections" and "sections")
+            child_sections = []
+            if isinstance(sec.get("subsections"), list):
+                child_sections.extend(sec["subsections"])
+            if isinstance(sec.get("sections"), list):
+                child_sections.extend(sec["sections"])
+
+            if child_sections:
+                _recurse(child_sections, path)
+
+    _recurse(struct.get("sections", []))
+    return rows 
