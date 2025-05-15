@@ -26,6 +26,26 @@ st.set_page_config(page_title="GenAI Regulation Extraction Tool", layout="wide")
 
 st.title("GenAI Regulation Extraction Tool (PoC)")
 
+with st.expander("ℹ️ How to Use This Tool & Important Notes", expanded=True):
+    st.markdown("""
+    **Welcome to the GenAI Regulation Extraction Tool!**
+
+    This tool helps you extract structured information (like requirements, sections, and keywords) from regulation PDF documents using AI.
+
+    **Steps:**
+    1.  **Upload PDF:** Click "Browse files" under "Input Parameters" to select your regulation document.
+    2.  **(Optional) Page Range:** If you only want to process specific pages, enter them (e.g., `1-5, 8, 10-12`). Leave blank to process all pages.
+    3.  **Pages per Chunk:** This controls how much text is sent to the AI at once. If you get errors or incomplete results, try a smaller number (e.g., 1 or 2).
+    4.  **Output Format:** Under "Output Settings", choose whether you want the results in JSON or YAML format.
+    5.  **API Key:** Enter your Google Gemini API key. This is required for the AI to process the document. The tool will try to load it from your environment if available.
+    6.  **Extract:** Click the "🚀 Extract Requirements" button.
+
+    **Important Considerations:**
+    *   **AI-Powered Extraction:** This tool uses a Generative AI model (Google Gemini) to understand and extract information. The accuracy and completeness of the extraction depend on the clarity of the PDF, the complexity of the regulation, and the AI's current capabilities.
+    *   **Review Required:** Always carefully review the extracted data. AI can make mistakes or misinterpret information. This tool is an aid, not a replacement for human review.
+    *   **Proof of Concept:** This is a Proof of Concept (PoC) tool. It demonstrates a potential application of AI but may have limitations and is not intended for production use without further development and testing.
+    """)
+
 # Initialize session state
 if 'app_data' not in st.session_state:
     st.session_state.app_data = {
@@ -121,6 +141,10 @@ with col2:
 
 # Process button with icon
 st.markdown("---")
+
+# Caveats before the process button (moved to the expander above)
+# st.info("**Important:** This tool uses AI (Gemini) for extraction. Please review results carefully. Accuracy depends on PDF clarity and AI capabilities. This is a PoC.")
+
 process_clicked = st.button("🚀 Extract Requirements", use_container_width=True, type="primary")
 
 # Place status placeholder here, after all widgets
