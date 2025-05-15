@@ -22,18 +22,9 @@ import json
 import yaml
 import pandas as pd
 
-st.set_page_config(page_title="GenAI Regulation Extraction Tool", layout="centered")
+st.set_page_config(page_title="GenAI Regulation Extraction Tool", layout="wide")
 
 st.title("GenAI Regulation Extraction Tool (PoC)")
-
-# Layout containers
-status_placeholder = st.empty()
-
-# File uploader (PDF only)
-uploaded_file = st.file_uploader("Upload a regulation PDF", type=["pdf"])
-
-# Output format selection
-output_format = st.radio("Select output format", ["JSON", "YAML"])
 
 # Utility to get API key from user input, env, or .env
 load_dotenv()
@@ -43,14 +34,7 @@ def get_api_key(user_input: str) -> str:
     env_key = os.getenv("GOOGLE_API_KEY")
     return env_key or ""
 
-# Add API key input (pre-fill if found)
-default_api_key = os.getenv("GOOGLE_API_KEY")
-api_key = st.text_input("Enter your Gemini API key", type="password", value=default_api_key or "")
-api_key = get_api_key(api_key)
-
-# Test feature: Page range selection
-page_range = st.text_input("(Optional) Enter page range to process (e.g. 1-3,5,7-8):", value="")
-
+# Function to parse page range string into a list of page indices
 def parse_page_range(page_range_str, num_pages):
     if not page_range_str.strip():
         return list(range(num_pages))
@@ -75,22 +59,58 @@ def parse_page_range(page_range_str, num_pages):
                 continue
     return sorted(pages)
 
-# Chunk size selection (pages per LLM call)
-chunk_size = st.number_input(
-    "Pages per chunk (for LLM call)",
-    min_value=1,
-    max_value=20,
-    value=5,
-    step=1,
-    help=(
-        "Controls how many PDF pages are sent to the AI in each request. "
-        "If you see errors about incomplete or truncated output, try lowering this number (e.g., 1 or 2). "
-        "Smaller values reduce the chance of hitting the model's output limit, but may take longer to process the whole document."
-    ),
-)
+# Create two columns for the input parameters
+col1, col2 = st.columns([2, 1])
 
-# Process button
-process_clicked = st.button("Extract Requirements")
+with col1:
+    # Create a container with a border for input parameters
+    with st.container(border=True):
+        st.subheader("Input Parameters")
+        
+        # File uploader (PDF only)
+        uploaded_file = st.file_uploader("Upload a regulation PDF", type=["pdf"], 
+                                        help="Select a PDF document containing the regulation text")
+        
+        # Test feature: Page range selection
+        page_range = st.text_input("(Optional) Enter page range to process (e.g. 1-3,5,7-8):", value="",
+                                 help="Specify pages to process, leave empty to process all pages")
+        
+        # Chunk size selection (pages per LLM call)
+        chunk_size = st.number_input(
+            "Pages per chunk (for LLM call)",
+            min_value=1,
+            max_value=20,
+            value=5,
+            step=1,
+            help=(
+                "Controls how many PDF pages are sent to the AI in each request. "
+                "If you see errors about incomplete or truncated output, try lowering this number (e.g., 1 or 2). "
+                "Smaller values reduce the chance of hitting the model's output limit, but may take longer to process the whole document."
+            ),
+        )
+
+with col2:
+    # Create a container with a border for output settings
+    with st.container(border=True):
+        st.subheader("Output Settings")
+        
+        # Output format selection
+        output_format = st.radio("Select output format", ["JSON", "YAML"], 
+                               help="Choose the format for the structured output")
+        
+        # Add API key input (pre-fill if found)
+        default_api_key = os.getenv("GOOGLE_API_KEY")
+        api_key = st.text_input("Enter your Gemini API key", type="password", 
+                              value=default_api_key or "", 
+                              help="Your Google Gemini API key for text processing")
+        api_key = get_api_key(api_key)
+
+# Process button with icon
+st.markdown("---")
+process_clicked = st.button("🚀 Extract Requirements", use_container_width=True, type="primary")
+
+# Place status placeholder here, after all widgets
+status_placeholder = st.empty()
 
 # If the user clicked process but is missing inputs, give immediate feedback
 if process_clicked and uploaded_file is None:
@@ -109,11 +129,12 @@ if process_clicked and uploaded_file is not None and api_key:
             selected_pages = parse_page_range(page_range, len(pages_text))
             pages_text = [pages_text[i] for i in selected_pages]
             status_placeholder.success(f"Extracted text from {len(pages_text)} selected pages.")
-            # Show preview of first page
+            # Show preview of first page with heading in an expander
             if pages_text:
-                preview_placeholder.code(pages_text[0][:2000], language="text")
+                with st.expander("Preview of First Page Extracted Text", expanded=True):
+                    st.code(pages_text[0][:2000], language="text")
             else:
-                preview_placeholder.info("No text found in PDF.")
+                st.info("No text found in PDF.")
         except Exception as e:
             status_placeholder.error(str(e))
             preview_placeholder.empty()
@@ -122,29 +143,34 @@ if process_clicked and uploaded_file is not None and api_key:
     llm_results = []
 
     # Progress bar across chunks
+    st.markdown("### Processing Chunks")
     progress_bar = st.progress(0)
+    chunk_status = st.empty()
 
     for idx, chunk_text in enumerate(chunks):
-        st.write(f"### Chunk {idx+1}/{len(chunks)}")
-        output_box = st.empty()  # placeholder for incremental update
-        accumulated = ""
-        try:
-            # Stream tokens incrementally
-            for part in stream_structured_data_from_llm(chunk_text, output_format, api_key):
-                accumulated += part
-                output_box.code(accumulated, language="text")
-            llm_results.append(accumulated)
-        except Exception as e:
-            error_msg = f"Error: {e}"
-            output_box.error(error_msg)
-            llm_results.append(error_msg)
+        chunk_status.info(f"Processing chunk {idx+1} of {len(chunks)}...")
+        with st.expander(f"Chunk {idx+1}/{len(chunks)}", expanded=False):
+            output_box = st.empty()  # placeholder for incremental update
+            accumulated = ""
+            try:
+                # Stream tokens incrementally
+                for part in stream_structured_data_from_llm(chunk_text, output_format, api_key):
+                    accumulated += part
+                    output_box.code(accumulated, language="text")
+                llm_results.append(accumulated)
+            except Exception as e:
+                error_msg = f"Error: {e}"
+                output_box.error(error_msg)
+                llm_results.append(error_msg)
         # Update overall progress
-        progress_bar.progress(int(((idx + 1) / len(chunks)) * 100))
-
+        progress_val = int(((idx + 1) / len(chunks)) * 100)
+        progress_bar.progress(progress_val, text=f"Processing: {progress_val}%")
+        
     progress_bar.empty()
+    chunk_status.empty()
 
     # --- Parse chunk responses & merge into a single structure ---
-    st.write("---")
+    st.markdown("---")
     st.subheader("Post-processing chunks")
 
     parsed_structs = []
@@ -162,51 +188,86 @@ if process_clicked and uploaded_file is not None and api_key:
     if parsed_structs:
         try:
             merged_structure = merge_structures(parsed_structs)
-
-            st.subheader("Merged Structured Output Preview")
-
+            
+            # Create tabs for different output views
+            st.markdown("---")
+            json_tab, yaml_tab, table_tab = st.tabs(["JSON View", "YAML View", "Table View"])
+            
+            # Prepare the download button data
             if output_format.upper() == "JSON":
-                st.json(merged_structure)
                 download_bytes = json.dumps(merged_structure, indent=2).encode()
                 mime = "application/json"
                 file_name = "extracted_structure.json"
             else:
                 yaml_str = yaml.safe_dump(merged_structure, sort_keys=False, indent=2)
-                st.code(yaml_str, language="yaml")
                 download_bytes = yaml_str.encode()
                 mime = "text/yaml"
                 file_name = "extracted_structure.yaml"
+            
+            # Download buttons in a row
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.download_button(
+                    label="📥 Download Structured Output",
+                    data=download_bytes,
+                    file_name=file_name,
+                    mime=mime,
+                )
 
-            download_placeholder.download_button(
-                label="Download structured output",
-                data=download_bytes,
-                file_name=file_name,
-                mime=mime,
-            )
+            # Content for JSON tab
+            with json_tab:
+                with st.expander("Merged JSON Structure", expanded=True):
+                    st.json(merged_structure)
+            
+            # Content for YAML tab
+            with yaml_tab:
+                with st.expander("Merged YAML Structure", expanded=True):
+                    yaml_str = yaml.safe_dump(merged_structure, sort_keys=False, indent=2)
+                    st.code(yaml_str, language="yaml")
+            
+            # Content for Table tab
+            with table_tab:
+                rows = flatten_requirements(merged_structure)
+                if rows:
+                    df = pd.DataFrame(rows)
+                    st.subheader("Requirements Table")
+
+                    # Always show the full table
+                    st.info(f"Showing all {len(df)} requirements.")
+
+                    st.dataframe(
+                        df, # Display the original, unfiltered dataframe
+                        use_container_width=True,
+                        column_config={
+                            "requirement_text": st.column_config.TextColumn(
+                                "Requirement Text",
+                                width="large",
+                            ),
+                            "keywords": st.column_config.ListColumn(
+                                "Keywords"
+                            ) if "keywords" in df.columns else None
+                        }
+                    )
+                    
+                    # Download CSV button for the full data
+                    if not df.empty:
+                        csv_bytes = df.to_csv(index=False).encode()
+                        st.download_button(
+                            label="📥 Download CSV",
+                            data=csv_bytes,
+                            file_name="requirements.csv",
+                            mime="text/csv",
+                            key="download_csv_button" 
+                        )
+                    else:
+                        st.warning("No data to download.")
+                else:
+                    st.info("No requirements found in the merged structure to display in table.")
+                    
         except Exception as e:  # noqa: BLE001
             st.error(f"Failed to merge structured outputs: {e}")
     else:
         st.warning("No valid structured outputs to merge.")
-
-    # --- New: tabular view & CSV/Excel export ---
-    if parsed_structs and 'merged_structure' in locals():
-        st.write("---")
-        st.subheader("Requirements Table")
-
-        rows = flatten_requirements(merged_structure)
-        if rows:
-            df = pd.DataFrame(rows)
-            st.dataframe(df, use_container_width=True)
-
-            csv_bytes = df.to_csv(index=False).encode()
-            download_placeholder.download_button(
-                label="Download CSV",
-                data=csv_bytes,
-                file_name="requirements.csv",
-                mime="text/csv",
-            )
-        else:
-            st.info("No requirements found in the merged structure.")
     # End of processing logic
 else:
     status_placeholder.empty()
